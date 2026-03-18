@@ -31,12 +31,12 @@ class Enemy:
             target = self.path[self.path_index + 1]
             target_x, target_y = target
             
-            # Simple movement logic (We will upgrade this to Vectors later)
+            # Simple movement logic (will upgrade this to vectors later)
             dir_x = target_x - self.x
             dir_y = target_y - self.y
             
             # Move towards target
-            # Note: This is a simplified version for the skeleton
+            # (simplified version for the skeleton)
             self.x += (dir_x * 0.05) * self.speed 
             self.y += (dir_y * 0.05) * self.speed
             
@@ -62,7 +62,6 @@ class Tower:
         self.pixel_x = (grid_x * 64) + 32
         self.pixel_y = (grid_y * 64) + 32
         
-        # ... (keep the rest of your stats and visual code exactly the same)
         
         # Base stats (from Design)
         self.range = 150
