@@ -5,7 +5,8 @@ class Map:
     def __init__(self):
         # 1 = Grass (Buildable), 0 = Path (Not Buildable)
         # This matches your design: "tiles and path which indicate different sections"
-        self.grid_map = [
+        # 11 rows, 20 columns
+        # self.grid_map = [
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -19,19 +20,54 @@ class Map:
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         ]
         
+        # 11 Rows, 20 Columns (Fills a 1280x720 screen)
+         self.grid_map = [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1],
+            [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1],
+            [1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1],
+            [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+            [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+            [1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ]
         # Define the exact coordinates the enemy must follow
         # These correspond roughly to the '0's in the grid above
         # UPDATED WAYPOINTS: Calculated to exactly follow the 0s in the grid_map
         # Formula used: (ColIndex * 64) + 32, (RowIndex * 64) + 32
-        self.waypoints = [
+        # self.waypoints = [
             (96, 96),    # 1. Start at top-left 
             (96, 352),   # 2. Down to bottom-left 
-            (736, 352),  # 3. Right along the bottom 
+            (352, 352),  # 3. Right along the bottom 
             (736, 160),  # 4. Up the right side 
             (480, 160),  # 5. Left along the top 
             (480, 224),  # 6. Down a step 
             (288, 224),  # 7. Left a step
             (288, 96)    # 8. Up to the end of the maze
+        ]
+        
+        # UPDATED WAYPOINTS: Fills the 1280x720 screen
+        # Formula: (ColIndex * 64) + 32, (RowIndex * 64) + 32
+        self.waypoints = [
+            (96, 96),     # 1. Start: Top-Left (Row 1, Col 1)
+            (416, 96),    # 2. Right to (Row 1, Col 6)
+            (416, 288),   # 3. Down to (Row 4, Col 6)
+            (800, 288),   # 4. Right to (Row 4, Col 12)
+            (800, 96),    # 5. Up to (Row 1, Col 12)
+            (1120, 96),   # 6. Right to (Row 1, Col 17)
+            (1120, 480),  # 7. Down to (Row 7, Col 17)
+            (608, 480),   # 8. Left to (Row 7, Col 9)
+            (608, 608),   # 9. Down to (Row 9, Col 9)
+            (416, 608),   # 10. Left to (Row 9, Col 6)
+            (416, 480),   # 11. Up to (Row 7, Col 6)
+            (288, 480),   # 12. Left to (Row 7, Col 4)
+            (288, 608),   # 13. Down to (Row 9, Col 4)
+            (96, 608)     # 14. End: Left to Bottom-Left (Row 9, Col 1)
+        
+        # 8. Up to the end of the maze
         ]
         
         self.tile_size = 64 
