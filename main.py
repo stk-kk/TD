@@ -48,7 +48,7 @@ while running:
                         position_empty = False
                         break 
                 
-                # 4. If empty, append a new tower to the list!
+                # 4. If empty, append a new tower to the list
                 if position_empty:
                     new_tower = Tower(grid_col, grid_row)
                     tower_list.append(new_tower)
@@ -97,7 +97,7 @@ while running:
         highlight.fill((0, 255, 0)) 
         screen.blit(highlight, (grid_x, grid_y))
         
-        # 2. Draw the Ghost Tower (Transparent Blue Square)
+        # 2. Draw Ghost Tower (Transparent Blue Square)
         ghost_tower = pygame.Surface((40, 40))
         ghost_tower.fill(BLUE)
         ghost_tower.set_alpha(150) # Make it semi-transparent
@@ -105,7 +105,7 @@ while running:
         screen.blit(ghost_tower, ghost_rect)
         
         # 3. Draw the Range Indicator (White Circle)
-        # We use 150 here because that matches the self.range in our Tower class!
+        # It is 150 here because that matches the self.range in the Tower class
         pygame.draw.circle(screen, WHITE, (grid_x + 32, grid_y + 32), 150, 2)
         
     else:
