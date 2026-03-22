@@ -1,7 +1,7 @@
 import pygame
 import sys
 from settings import *
-from entities import Enemy, Tower
+from entities import Enemy, Tower, SniperTower, RapidTower  # <--- NEW IMPORTS
 from map import Map  # <--- NEW IMPORT
 
 # --- Setup ---
@@ -19,13 +19,10 @@ test_enemy = Enemy(level_map.get_waypoints())
 enemy_list.append(test_enemy)
 
 tower_list = []
-player_money = 500 # <--- CYCLE 6: STARTING BALANCE
-
+player_money = 500
 projectile_list = []
 
-# Spawn test enemy using the MAP's waypoints
-test_enemy = Enemy(level_map.get_waypoints()) 
-enemy_list.append(test_enemy)
+current_selection = 1 # 1=Basic, 2=Sniper, 3=Rapid
 
 # --- Main Game Loop ---
 running = True
@@ -35,6 +32,18 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        # --- CYCLE 8: SELECT TOWER TYPE ---
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_1:
+                current_selection = 1
+                print("Selected: Basic Tower (100g)")
+            elif event.key == pygame.K_2:
+                current_selection = 2
+                print("Selected: Sniper Tower (250g)")
+            elif event.key == pygame.K_3:
+                current_selection = 3
+                print("Selected: Rapid Tower (150g)")
             
         # --- CYCLE 5: TOWER PLACEMENT ---
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: # 1 = Left Click
@@ -54,19 +63,23 @@ while running:
                         position_empty = False
                         break 
                 
-                # 4. If empty, append a new tower to the list
+                # 4. If empty, append the SELECTED tower to the list
                 if position_empty:
-                    new_tower = Tower(grid_col, grid_row)
+                    # Instantiate the correct class based on selection
+                    if current_selection == 1:
+                        new_tower = Tower(grid_col, grid_row)
+                    elif current_selection == 2:
+                        new_tower = SniperTower(grid_col, grid_row) # Instantiate Child Class
+                    elif current_selection == 3:
+                        new_tower = RapidTower(grid_col, grid_row)  # Instantiate Child Class
                     
                     # Check if the player has enough gold
                     if player_money >= new_tower.cost: 
                         tower_list.append(new_tower)
-                        
-                        # Deduct the cost from the player's money
                         player_money -= new_tower.cost 
                         print(f"Tower Placed! Remaining money: {player_money}")
                     else:
-                        print(f"Invalid: Insufficient funds. You only have {player_money} gold.")
+                        print(f"Invalid: Insufficient funds. You need {new_tower.cost} gold.")
                 else:
                     print("Invalid: Tower already exists here.")
 
@@ -80,15 +93,18 @@ while running:
     for proj in projectile_list:
         proj.update(dt)
         
-    # Clean up inactive projectiles (bullets that hit their target)
+    # Remove inactive projectiles (bullets that hit their target)
     projectile_list = [p for p in projectile_list if p.active]
     
-    # Clean up dead enemies and give the player money!
+    # Remove dead enemies and give the player money
     for enemy in enemy_list:
         if enemy.hp <= 0:
             player_money += enemy.reward
             print(f"Enemy killed! +{enemy.reward} gold. Total: {player_money}")
+            
+    # Officially deletes them from the game
     enemy_list = [e for e in enemy_list if e.hp > 0]
+    # --------------------------------
 
     # ----------------------------------------------
     # Drawing

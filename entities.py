@@ -104,6 +104,36 @@ class Tower:
                     
                     self.cooldown = 1.0 / self.fire_rate
                     break # Only shoot one enemy at a time
+
+# --- CYCLE 8: INHERITANCE & POLYMORPHISM ---
+
+class SniperTower(Tower): # The (Tower) means it inherits everything from the base Tower!
+    def __init__(self, grid_x, grid_y):
+        super().__init__(grid_x, grid_y) # Run the Parent's setup
+        
+        # Override the base stats (Polymorphism)
+        self.range = 300      # Massive range
+        self.damage = 5       # Massive damage
+        self.fire_rate = 0.5  # Very slow (1 shot every 2 seconds)
+        self.cost = 250       # Expensive
+        
+        # Visuals
+        self.image.fill((255, 255, 0)) # Yellow square for Sniper
+
+class RapidTower(Tower):
+    def __init__(self, grid_x, grid_y):
+        super().__init__(grid_x, grid_y) 
+        
+        # Override the base stats
+        self.range = 100      # Short range
+        self.damage = 1       # Low damage
+        self.fire_rate = 5.0  # Very fast (5 shots per second!)
+        self.cost = 150       # Medium price
+        
+        # Visuals
+        self.image.fill((128, 0, 128)) # Purple square for Rapid Fire
+
+
 class Projectile:
     def __init__(self, start_x, start_y, target, damage):
         self.x = float(start_x)
@@ -124,7 +154,7 @@ class Projectile:
         dy = self.target.rect.centery - self.y
         distance = math.hypot(dx, dy)
 
-        # Hit detection! If we are super close, deal damage and disappear
+        # Hit detection, if the bullet is super close, deal damage and disappear
         if distance < 10:
             self.target.hp -= self.damage
             self.active = False
