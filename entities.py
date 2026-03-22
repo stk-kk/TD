@@ -16,7 +16,7 @@ class Enemy:
         raw_image = pygame.image.load("assets/enemy.png").convert_alpha()
         
         # Scale it to fit the track (40x40 pixels)
-        self.image = pygame.transform.scale(raw_image, (40, 40))
+        self.image = pygame.transform.scale(raw_image, (60, 60))
         
         # Start at the first point of the path
         start_pos = self.path[0]
@@ -83,7 +83,7 @@ class Tower:
         raw_image = pygame.image.load("assets/tower.png").convert_alpha()
         
         # Scale it to fit nicely inside the 64x64 grid tile
-        self.image = pygame.transform.scale(raw_image, (50, 50))
+        self.image = pygame.transform.scale(raw_image, (64, 64))
         self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
         
     def draw(self, screen):
@@ -111,7 +111,7 @@ class Tower:
 
 # --- CYCLE 8: INHERITANCE & POLYMORPHISM ---
 
-class SniperTower(Tower): # The (Tower) means it inherits everything from the base Tower!
+class SniperTower(Tower): # (Tower) means it inherits from the Tower class
     def __init__(self, grid_x, grid_y):
         super().__init__(grid_x, grid_y) # Run the Parent's setup
         
@@ -154,7 +154,7 @@ class Projectile:
         # raw_image.set_colorkey((255, 255, 255))
         
         # Scale the bullet (adjust these numbers if it's too big or small)
-        self.original_image = pygame.transform.scale(raw_image, (25, 10)) 
+        self.original_image = pygame.transform.scale(raw_image, (40, 16)) 
         self.image = self.original_image
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
 
