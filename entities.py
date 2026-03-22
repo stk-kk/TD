@@ -12,9 +12,11 @@ class Enemy:
         self.path_index = 0
         self.path = path # Store path logic
         
-        # Visuals (Placeholder red square for now)
-        self.image = pygame.Surface((30, 30))
-        self.image.fill(RED)
+        # Visuals (Loading the PNG)
+        raw_image = pygame.image.load("assets/enemy.png").convert_alpha()
+        
+        # Scale it to fit the track (40x40 pixels)
+        self.image = pygame.transform.scale(raw_image, (40, 40))
         
         # Start at the first point of the path
         start_pos = self.path[0]
@@ -77,9 +79,11 @@ class Tower:
         self.cooldown = 0
         self.cost = 100 # <--- CYCLE 6: TOWER COST
         
-        # Visuals (blue square for now)
-        self.image = pygame.Surface((40, 40))
-        self.image.fill(BLUE) 
+        # Visuals (Loading the PNG)
+        raw_image = pygame.image.load("assets/tower.png").convert_alpha()
+        
+        # Scale it to fit nicely inside the 64x64 grid tile
+        self.image = pygame.transform.scale(raw_image, (50, 50))
         self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
         
     def draw(self, screen):
@@ -139,33 +143,50 @@ class Projectile:
         self.x = float(start_x)
         self.y = float(start_y)
         self.target = target
-        self.speed = 500.0 # Pixels per second
+        self.speed = 400.0 # Pixels per second
         self.damage = damage
-        self.active = True # Used to delete the bullet when it hits
+        self.active = True
+
+        # --- CYCLE 8: LOAD THE BULLET PNG ---
+        raw_image = pygame.image.load("assets/bullet.png").convert_alpha()
+        
+        # Uncomment the line below if your bullet still has a white background!
+        # raw_image.set_colorkey((255, 255, 255))
+        
+        # Scale the bullet (adjust these numbers if it's too big or small)
+        self.original_image = pygame.transform.scale(raw_image, (25, 10)) 
+        self.image = self.original_image
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
 
     def update(self, dt):
-        # If the target is dead or bullet already hit, stop.
         if not self.active or self.target.hp <= 0:
             self.active = False
             return
 
-        # Calculate angle to the target using Trigonometry
         dx = self.target.rect.centerx - self.x
         dy = self.target.rect.centery - self.y
         distance = math.hypot(dx, dy)
 
-        # Hit detection, if the bullet is super close, deal damage and disappear
         if distance < 10:
             self.target.hp -= self.damage
             self.active = False
             print(f"Hit! Enemy HP: {self.target.hp}")
             return
 
-        # Move the bullet towards the target
+        # Move the bullet
         angle = math.atan2(dy, dx)
         self.x += math.cos(angle) * self.speed * dt
         self.y += math.sin(angle) * self.speed * dt
+        
+        # --- CYCLE 8: ROTATE THE BULLET ---
+        # Pygame rotates counter-clockwise, so we use negative degrees
+        angle_degrees = math.degrees(-angle)
+        self.image = pygame.transform.rotate(self.original_image, angle_degrees)
+        
+        # Update the rect position so it draws in the right spot
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
 
     def draw(self, screen):
         if self.active:
-            pygame.draw.circle(screen, (255, 255, 0), (int(self.x), int(self.y)), 5) # Yellow bullet
+            # Draw the PNG instead of the yellow circle
+            screen.blit(self.image, self.rect)
