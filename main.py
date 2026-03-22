@@ -82,30 +82,36 @@ while running:
         
     # Clean up inactive projectiles (bullets that hit their target)
     projectile_list = [p for p in projectile_list if p.active]
+    
+    # Clean up dead enemies and give the player money!
+    for enemy in enemy_list:
+        if enemy.hp <= 0:
+            player_money += enemy.reward
+            print(f"Enemy killed! +{enemy.reward} gold. Total: {player_money}")
+    enemy_list = [e for e in enemy_list if e.hp > 0]
 
+    # ----------------------------------------------
     # Drawing
+    # ----------------------------------------------
     screen.fill(BLACK)
     
+    # 1. Draw the map (Bottom Layer)
     level_map.draw(screen) 
     
-    for enemy in enemy_list:
-        enemy.draw(screen)
-
     # 2. Draw placed towers
     for tower in tower_list:
         tower.draw(screen)
     
-    # 3. Draw enemies on top of the path
+    # 3. Draw enemies
     for enemy in enemy_list:
         enemy.draw(screen)
 
-    # 4. Draw projectiles on top of everything!
+    # 4. Draw projectiles (Top Layer)
     for proj in projectile_list:
         proj.draw(screen)
 
     # --- CYCLE 3 & 4: MOUSE HOVER & GHOST TOWER ---
     mouse_x, mouse_y = pygame.mouse.get_pos()
-    
     grid_col = mouse_x // level_map.tile_size
     grid_row = mouse_y // level_map.tile_size
     grid_x = grid_col * level_map.tile_size
@@ -114,32 +120,20 @@ while running:
     highlight = pygame.Surface((level_map.tile_size, level_map.tile_size))
     highlight.set_alpha(128) 
 
-    level_map.draw(screen) 
-    
-    # --- CYCLE 5: DRAW PLACED TOWERS ---
-    for tower in tower_list:
-        tower.draw(screen)
-    # -----------------------------------
-    
-    for enemy in enemy_list:
-        enemy.draw(screen)
-    
     if level_map.is_buildable(mouse_x, mouse_y):
-        # 1. Draw Green valid box
+        # Draw Green valid box
         highlight.fill((0, 255, 0)) 
         screen.blit(highlight, (grid_x, grid_y))
         
-        # 2. Draw Ghost Tower (Transparent Blue Square)
+        # Draw Ghost Tower (Transparent Blue Square)
         ghost_tower = pygame.Surface((40, 40))
         ghost_tower.fill(BLUE)
-        ghost_tower.set_alpha(150) # Make it semi-transparent
+        ghost_tower.set_alpha(150) 
         ghost_rect = ghost_tower.get_rect(center=(grid_x + 32, grid_y + 32))
         screen.blit(ghost_tower, ghost_rect)
         
-        # 3. Draw the Range Indicator (White Circle)
-        # It is 150 here because that matches the self.range in the Tower class
+        # Draw the Range Indicator (White Circle)
         pygame.draw.circle(screen, WHITE, (grid_x + 32, grid_y + 32), 150, 2)
-        
     else:
         # Draw Red invalid box
         highlight.fill((255, 0, 0)) 
@@ -147,6 +141,5 @@ while running:
     # ----------------------------------------------
 
     pygame.display.flip()
-
 pygame.quit()
 sys.exit()

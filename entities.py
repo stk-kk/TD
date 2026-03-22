@@ -6,8 +6,8 @@ from settings import *
 class Enemy:
     def __init__(self, path):
         # Attributes from Design 
-        self.hp = 10
-        self.speed = 2.0  # Float for precision
+        self.hp = 5
+        self.speed = 200.0  # Float for precision
         self.reward = 5
         self.path_index = 0
         self.path = path # Store path logic
@@ -27,26 +27,32 @@ class Enemy:
         self.move_along_path(dt)
 
     def move_along_path(self, dt):
-        # 1. Target the next node
         if self.path_index < len(self.path) - 1:
             target = self.path[self.path_index + 1]
             target_x, target_y = target
             
-            # Simple movement logic (will upgrade this to vectors later)
+            # Calculate distance to target
             dir_x = target_x - self.x
             dir_y = target_y - self.y
+            distance = math.hypot(dir_x, dir_y)
             
-            # Move towards target
-            # (simplified version for the skeleton)
-            self.x += (dir_x * 0.05) * self.speed 
-            self.y += (dir_y * 0.05) * self.speed
-            
-            # Update physical position
-            self.rect.centerx = int(self.x)
-            self.rect.centery = int(self.y)
-            
+            if distance > 0:
+                # Divide vector by distance) and multiply by constant speed
+                move_x = (dir_x / distance) * self.speed * dt
+                move_y = (dir_y / distance) * self.speed * dt
+                
+                # Doesn't overshooting the target
+                if abs(move_x) > abs(dir_x): move_x = dir_x
+                if abs(move_y) > abs(dir_y): move_y = dir_y
+                
+                self.x += move_x
+                self.y += move_y
+                
+                self.rect.centerx = int(self.x)
+                self.rect.centery = int(self.y)
+                
             # Check if close to target node (snap to it)
-            if abs(dir_x) < 5 and abs(dir_y) < 5:
+            if distance < 5:
                 self.path_index += 1
 
     def draw(self, screen):
@@ -90,8 +96,8 @@ class Tower:
                 # Calculate distance to enemy
                 dist = math.hypot(enemy.rect.centerx - self.pixel_x, enemy.rect.centery - self.pixel_y)
                 
-                # If the enemy is inside the range circle
-                if dist <= self.range:
+                # If the enemy is inside the range circle AND is still alive
+                if dist <= self.range and enemy.hp > 0:
                     # Fires, creates a projectile and reset cooldown
                     new_bullet = Projectile(self.pixel_x, self.pixel_y, enemy, self.damage)
                     projectile_list.append(new_bullet)
@@ -103,7 +109,7 @@ class Projectile:
         self.x = float(start_x)
         self.y = float(start_y)
         self.target = target
-        self.speed = 50.0 # Pixels per second
+        self.speed = 500.0 # Pixels per second
         self.damage = damage
         self.active = True # Used to delete the bullet when it hits
 
