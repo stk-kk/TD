@@ -1,5 +1,6 @@
 # entities.py
 import pygame
+import math
 from settings import *
 
 class Enemy:
@@ -68,6 +69,7 @@ class Tower:
         self.damage = 1
         self.fire_rate = 1.0
         self.cooldown = 0
+        self.cost = 100 # <--- CYCLE 6: TOWER COST
         
         # Visuals (blue square for now)
         self.image = pygame.Surface((40, 40))
@@ -76,3 +78,58 @@ class Tower:
         
     def draw(self, screen):
         screen.blit(self.image, self.rect)
+    
+    def update(self, dt, enemy_list, projectile_list):
+        # Decrease the cooldown timer
+        if self.cooldown > 0:
+            self.cooldown -= dt
+
+        # Once tower is ready to shoot, fire the turret
+        if self.cooldown <= 0:
+            for enemy in enemy_list:
+                # Calculate distance to enemy
+                dist = math.hypot(enemy.rect.centerx - self.pixel_x, enemy.rect.centery - self.pixel_y)
+                
+                # If the enemy is inside the range circle
+                if dist <= self.range:
+                    # Fires, creates a projectile and reset cooldown
+                    new_bullet = Projectile(self.pixel_x, self.pixel_y, enemy, self.damage)
+                    projectile_list.append(new_bullet)
+                    
+                    self.cooldown = 1.0 / self.fire_rate
+                    break # Only shoot one enemy at a time
+class Projectile:
+    def __init__(self, start_x, start_y, target, damage):
+        self.x = float(start_x)
+        self.y = float(start_y)
+        self.target = target
+        self.speed = 50.0 # Pixels per second
+        self.damage = damage
+        self.active = True # Used to delete the bullet when it hits
+
+    def update(self, dt):
+        # If the target is dead or bullet already hit, stop.
+        if not self.active or self.target.hp <= 0:
+            self.active = False
+            return
+
+        # Calculate angle to the target using Trigonometry
+        dx = self.target.rect.centerx - self.x
+        dy = self.target.rect.centery - self.y
+        distance = math.hypot(dx, dy)
+
+        # Hit detection! If we are super close, deal damage and disappear
+        if distance < 10:
+            self.target.hp -= self.damage
+            self.active = False
+            print(f"Hit! Enemy HP: {self.target.hp}")
+            return
+
+        # Move the bullet towards the target
+        angle = math.atan2(dy, dx)
+        self.x += math.cos(angle) * self.speed * dt
+        self.y += math.sin(angle) * self.speed * dt
+
+    def draw(self, screen):
+        if self.active:
+            pygame.draw.circle(screen, (255, 255, 0), (int(self.x), int(self.y)), 5) # Yellow bullet

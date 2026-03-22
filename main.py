@@ -15,7 +15,13 @@ level_map = Map()  # <--- Create the map object
 
 # --- Game State ---
 enemy_list = [] 
+test_enemy = Enemy(level_map.get_waypoints()) 
+enemy_list.append(test_enemy)
+
 tower_list = []
+player_money = 500 # <--- CYCLE 6: STARTING BALANCE
+
+projectile_list = []
 
 # Spawn test enemy using the MAP's waypoints
 test_enemy = Enemy(level_map.get_waypoints()) 
@@ -51,17 +57,31 @@ while running:
                 # 4. If empty, append a new tower to the list
                 if position_empty:
                     new_tower = Tower(grid_col, grid_row)
-                    tower_list.append(new_tower)
-                    print("Tower Placed!")
+                    
+                    # Check if the player has enough gold
+                    if player_money >= new_tower.cost: 
+                        tower_list.append(new_tower)
+                        
+                        # Deduct the cost from the player's money
+                        player_money -= new_tower.cost 
+                        print(f"Tower Placed! Remaining money: {player_money}")
+                    else:
+                        print(f"Invalid: Insufficient funds. You only have {player_money} gold.")
                 else:
                     print("Invalid: Tower already exists here.")
-            else:
-                print("Invalid: Cannot build on the path.")
-        # --------------------------------
 
     # Updates
     for enemy in enemy_list:
         enemy.update(dt)
+        
+    for tower in tower_list:
+        tower.update(dt, enemy_list, projectile_list)
+        
+    for proj in projectile_list:
+        proj.update(dt)
+        
+    # Clean up inactive projectiles (bullets that hit their target)
+    projectile_list = [p for p in projectile_list if p.active]
 
     # Drawing
     screen.fill(BLACK)
@@ -70,6 +90,18 @@ while running:
     
     for enemy in enemy_list:
         enemy.draw(screen)
+
+    # 2. Draw placed towers
+    for tower in tower_list:
+        tower.draw(screen)
+    
+    # 3. Draw enemies on top of the path
+    for enemy in enemy_list:
+        enemy.draw(screen)
+
+    # 4. Draw projectiles on top of everything!
+    for proj in projectile_list:
+        proj.draw(screen)
 
     # --- CYCLE 3 & 4: MOUSE HOVER & GHOST TOWER ---
     mouse_x, mouse_y = pygame.mouse.get_pos()
