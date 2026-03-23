@@ -6,9 +6,12 @@ from map import Map  # <--- NEW IMPORT
 
 # --- Setup ---
 pygame.init()
+pygame.font.init() # <--- CYCLE 9: INITIALIZE FONTS
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Tower Defence - Cycle 2")
+pygame.display.set_caption("Tower Defence - Cycle 9")
 clock = pygame.time.Clock()
+
+ui_font = pygame.font.SysFont('Arial', 24, bold=True)
 
 # --- Initialize Map ---
 level_map = Map()  # <--- Create the map object
@@ -20,6 +23,7 @@ enemy_list.append(test_enemy)
 
 tower_list = []
 player_money = 500
+player_health = 100
 projectile_list = []
 
 current_selection = 1 # 1=Basic, 2=Sniper, 3=Rapid
@@ -83,9 +87,11 @@ while running:
                 else:
                     print("Invalid: Tower already exists here.")
 
-    # Updates
+  # --------------------------------------------------------
+    # --- Updates ---
+    # 1. Move everything (THIS IS WHAT WAS MISSING!)
     for enemy in enemy_list:
-        enemy.update(dt)
+        enemy.update(dt) 
         
     for tower in tower_list:
         tower.update(dt, enemy_list, projectile_list)
@@ -93,18 +99,22 @@ while running:
     for proj in projectile_list:
         proj.update(dt)
         
-    # Remove inactive projectiles (bullets that hit their target)
+    # 2. Clean up inactive projectiles (bullets that hit their target)
     projectile_list = [p for p in projectile_list if p.active]
     
-    # Remove dead enemies and give the player money
+    # 3. Clean up dead enemies OR enemies that reached the base
     for enemy in enemy_list:
         if enemy.hp <= 0:
             player_money += enemy.reward
-            print(f"Enemy killed! +{enemy.reward} gold. Total: {player_money}")
             
-    # Officially deletes them from the game
+        # Check if the enemy reached the last waypoint on the path
+        elif enemy.path_index >= len(enemy.path) - 1:
+            player_health -= 10 # Take 10 damage!
+            enemy.hp = 0        # Force the enemy to "die" so it gets deleted
+            
+    # 4. Officially delete them from the game
     enemy_list = [e for e in enemy_list if e.hp > 0]
-    # --------------------------------
+    # --------------------------------------------------------
 
     # ----------------------------------------------
     # Drawing
@@ -154,6 +164,37 @@ while running:
         # Draw Red invalid box
         highlight.fill((255, 0, 0)) 
         screen.blit(highlight, (grid_x, grid_y))
+    # ----------------------------------------------
+
+    # ----------------------------------------------
+    # --- CYCLE 9: DRAW USER INTERFACE (GUI) ---
+    # ----------------------------------------------
+    # 1. Drawing a dark grey UI bar at the top of the screen
+    pygame.draw.rect(screen, (40, 40, 40), (0, 0, SCREEN_WIDTH, 40))
+    pygame.draw.line(screen, (255, 255, 255), (0, 40), (SCREEN_WIDTH, 40), 2) # White border line
+
+    # 2. Render Text 
+    health_text = ui_font.render(f"Base Health: {player_health}", True, (255, 100, 100)) # Light Red text
+    money_text = ui_font.render(f"Gold: {player_money}", True, (255, 215, 0))          # Gold text
+    
+    # 3. Determine which tower text to show based on your keyboard selection
+    if current_selection == 1: 
+        tower_info = "Basic (100g) | DMG: 1 | SPD: Normal"
+    elif current_selection == 2: 
+        tower_info = "Sniper (250g) | DMG: 5 | SPD: Slow"
+    elif current_selection == 3: 
+        tower_info = "Rapid (150g) | DMG: 1 | SPD: Fast"
+        
+    selection_text = ui_font.render(f"Selected: {tower_info}", True, (255, 255, 255))
+
+    # 4. Blit (Draw) the text onto the screen
+    screen.blit(health_text, (20, 10))
+    screen.blit(money_text, (200, 10))
+    screen.blit(selection_text, (400, 10))
+
+    # Draw Enemies
+    for enemy in enemy_list:
+        enemy.draw(screen) # <--- USE OUR NEW METHOD!
     # ----------------------------------------------
 
     pygame.display.flip()

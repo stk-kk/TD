@@ -7,6 +7,7 @@ class Enemy:
     def __init__(self, path):
         # Attributes from Design 
         self.hp = 5
+        self.max_hp = self.hp 
         self.speed = 200.0  # Float for precision
         self.reward = 5
         self.path_index = 0
@@ -27,6 +28,25 @@ class Enemy:
     def update(self, dt):
         """ Moves the enemy. Matches 'move_along_path' logic. """
         self.move_along_path(dt)
+
+    def draw(self, screen):
+        # 1. Draw the actual plane 
+        screen.blit(self.image, self.rect)
+        
+        # 2. Draw the Health Bar
+        if self.hp > 0:
+            health_percentage = self.hp / self.max_hp
+            bar_width = 40
+            bar_height = 6
+            
+            # ut the bar slightly above the enemy's head
+            bar_x = self.rect.centerx - (bar_width / 2)
+            bar_y = self.rect.top - 10 
+            
+            # Draw Red Background (Missing Health)
+            pygame.draw.rect(screen, (255, 0, 0), (bar_x, bar_y, bar_width, bar_height))
+            # Draw Green (Current Health)
+            pygame.draw.rect(screen, (0, 255, 0), (bar_x, bar_y, bar_width * health_percentage, bar_height))
 
     def move_along_path(self, dt):
         if self.path_index < len(self.path) - 1:
