@@ -77,9 +77,6 @@ class Enemy:
             if distance < 5:
                 self.path_index += 1
 
-    def draw(self, screen):
-        screen.blit(self.image, self.rect)
-
 class Tower:
     def __init__(self, grid_x, grid_y):
         # --- NEW CYCLE 5 ADDITIONS ---

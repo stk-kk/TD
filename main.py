@@ -192,9 +192,6 @@ while running:
     screen.blit(money_text, (200, 10))
     screen.blit(selection_text, (400, 10))
 
-    # Draw Enemies
-    for enemy in enemy_list:
-        enemy.draw(screen) # <--- USE OUR NEW METHOD!
     # ----------------------------------------------
 
     pygame.display.flip()
