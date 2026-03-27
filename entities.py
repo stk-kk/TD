@@ -196,7 +196,7 @@ class Projectile:
         self.y += math.sin(angle) * self.speed * dt
         
         # --- CYCLE 8: ROTATE THE BULLET ---
-        # Pygame rotates counter-clockwise, so we use negative degrees
+        # Pygame rotates counter-clockwise, so this code uses negative degrees
         angle_degrees = math.degrees(-angle)
         self.image = pygame.transform.rotate(self.original_image, angle_degrees)
         

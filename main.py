@@ -115,11 +115,9 @@ while running:
     # 4. Officially delete them from the game
     enemy_list = [e for e in enemy_list if e.hp > 0]
     # --------------------------------------------------------
-
     # ----------------------------------------------
     # Drawing
     # ----------------------------------------------
-    screen.fill(BLACK)
     
     # 1. Draw the map (Bottom Layer)
     level_map.draw(screen) 
@@ -164,13 +162,9 @@ while running:
         # Draw Red invalid box
         highlight.fill((255, 0, 0)) 
         screen.blit(highlight, (grid_x, grid_y))
-    # ----------------------------------------------
 
-    # ----------------------------------------------
     # --- CYCLE 9: DRAW USER INTERFACE (GUI) ---
-    # ----------------------------------------------
     # 1. Drawing a dark grey UI bar at the top of the screen
-    pygame.draw.rect(screen, (40, 40, 40), (0, 0, SCREEN_WIDTH, 40))
     pygame.draw.line(screen, (255, 255, 255), (0, 40), (SCREEN_WIDTH, 40), 2) # White border line
 
     # 2. Render Text 
