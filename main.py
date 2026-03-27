@@ -1,7 +1,7 @@
 import pygame
 import sys
 from settings import *
-from entities import Enemy, Tower, SniperTower, RapidTower 
+from entities import Enemy, FastEnemy, BossEnemy, Tower, SniperTower, RapidTower 
 from map import Map
 from wave import WaveManager
 
@@ -15,7 +15,7 @@ clock = pygame.time.Clock()
 ui_font = pygame.font.SysFont('Arial', 24, bold=True)
 
 # --- Initialize Map ---
-level_map = Map()  # <--- Create the map object
+level_map = Map("levels/map.txt")  # <--- Create the map object
 
 # --- Game State ---
 enemy_list = [] 
@@ -158,13 +158,15 @@ while running:
     # 4. Officially delete them from the game
     enemy_list = [e for e in enemy_list if e.hp > 0]
 
-    # Drawing
-   
+    # --- DRAWING ---
     
-    # 1. Draw the map (Bottom Layer)
-    level_map.draw(screen) 
+    # 1. WIPE THE SCREEN CLEAN EVERY FRAME
+    screen.fill((20, 20, 20)) # Fills the empty space with dark grey
     
-    # 2. Draw placed towers
+    # 2. Draw the Map
+    level_map.draw(screen)
+    
+    # 3. Draw placed towers
     for tower in tower_list:
         tower.draw(screen)
     
@@ -186,20 +188,28 @@ while running:
     highlight = pygame.Surface((level_map.tile_size, level_map.tile_size))
     highlight.set_alpha(128) 
 
+    # Check if we are hovering over a valid grass tile
     if level_map.is_buildable(mouse_x, mouse_y):
-        # Draw Green valid box
-        highlight.fill((0, 255, 0)) 
-        screen.blit(highlight, (grid_x, grid_y))
         
-        # Draw Preview Tower (Transparent Blue Square)
-        ghost_tower = pygame.Surface((40, 40))
-        ghost_tower.fill(BLUE)
-        ghost_tower.set_alpha(150) 
-        ghost_rect = ghost_tower.get_rect(center=(grid_x + 32, grid_y + 32))
-        screen.blit(ghost_tower, ghost_rect)
+        # 1. Dynamically create the correct preview tower based on keyboard selection
+        if current_selection == 1:
+            preview_tower = Tower(grid_col, grid_row)
+        elif current_selection == 2:
+            preview_tower = SniperTower(grid_col, grid_row)
+        elif current_selection == 3:
+            preview_tower = RapidTower(grid_col, grid_row)
+            
+        # 2. Make the preview image semi-transparent
+        preview_image = preview_tower.image.copy()
+        preview_image.set_alpha(150)
         
-        # Draw the Range Indicator (White Circle)
-        pygame.draw.circle(screen, WHITE, (grid_x + 32, grid_y + 32), 150, 2)
+        # 3. Draw the preview image
+        screen.blit(preview_image, preview_tower.rect)
+        
+        # 4. Draw the dynamic range circle
+        center_x = (grid_col * level_map.tile_size) + (level_map.tile_size // 2)
+        center_y = (grid_row * level_map.tile_size) + (level_map.tile_size // 2)
+        pygame.draw.circle(screen, (255, 255, 255), (center_x, center_y), preview_tower.range, 2)
     else:
         # Draw Red invalid box
         highlight.fill((255, 0, 0)) 
@@ -245,10 +255,6 @@ while running:
     wave_rect = wave_text.get_rect(topright=(SCREEN_WIDTH - 20, 10))
     screen.blit(wave_text, wave_rect)
 
-    # Draw Enemies (Ensures health bars draw OVER the map)
-    for enemy in enemy_list:
-        enemy.draw(screen) 
-    
     # --- DRAW WARNING MESSAGE ---
     if warning_timer > 0:
         # Render the text in bright red

@@ -101,15 +101,43 @@ class Tower:
         
         # Scale it to fit nicely inside the 64x64 grid tile
         self.image = pygame.transform.scale(raw_image, (64, 64))
+        self.original_image = self.image.copy() # Save a clean copy for rotations
         self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
         
     def draw(self, screen):
         screen.blit(self.image, self.rect)
     
     def update(self, dt, enemy_list, projectile_list):
-        # Decrease the cooldown timer
+        # 1. Decrease the cooldown timer
         if self.cooldown > 0:
             self.cooldown -= dt
+
+        # 2. Find an enemy to aim at (Targeting)
+        target = None
+        for enemy in enemy_list:
+            dist = math.hypot(enemy.rect.centerx - self.pixel_x, enemy.rect.centery - self.pixel_y)
+            # If the enemy is inside the range circle AND is still alive
+            if dist <= self.range and enemy.hp > 0:
+                target = enemy
+                break # Aim at the first enemy we find in range
+
+        # 3. If we found a target, rotate and shoot!
+        if target:
+            # Calculate distance in X and Y
+            dx = target.rect.centerx - self.pixel_x
+            dy = target.rect.centery - self.pixel_y
+            
+            # Calculate angle in radians, then convert to degrees
+            angle_rad = math.atan2(dy, dx)
+            angle_deg = math.degrees(-angle_rad)
+            
+            # --- OFFSET NOTE ---
+            # If your tower barrel points UP in your PNG, uncomment the line below:
+            angle_deg -= 90
+            
+            # Rotate the clean original image
+            self.image = pygame.transform.rotate(self.original_image, angle_deg)
+            self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
 
         # Once tower is ready to shoot, fire the turret
         if self.cooldown <= 0:
@@ -138,8 +166,11 @@ class SniperTower(Tower): # (Tower) means it inherits from the Tower class
         self.fire_rate = 0.5  # Very slow (1 shot every 2 seconds)
         self.cost = 250       # Expensive
         
-        # Visuals
-        self.image.fill((255, 255, 0)) # Yellow square for Sniper
+        # Load the custom sprite and scale it to fit the 64x64 grid
+        self.image = pygame.image.load("assets/sniper_tower.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (64, 64))
+        self.original_image = self.image.copy() # Save a clean copy for rotations
+        self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
 
 class RapidTower(Tower):
     def __init__(self, grid_x, grid_y):
@@ -148,11 +179,15 @@ class RapidTower(Tower):
         # Override the base stats
         self.range = 100      # Short range
         self.damage = 1       # Low damage
-        self.fire_rate = 5.0  # Very fast (5 shots per second!)
+        self.fire_rate = 5.0  # Very fast (5 shots per second)
         self.cost = 150       # Medium price
         
-        # Visuals
-        self.image.fill((128, 0, 128)) # Purple square for Rapid Fire
+        # Load the rapid tower sprite
+        self.image = pygame.image.load("assets/rapid_tower.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (64, 64))
+        self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
+        self.original_image = self.image.copy() # Save a clean copy 
+        self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
 
 
 class Projectile:
@@ -166,9 +201,6 @@ class Projectile:
 
         # --- CYCLE 8: LOAD THE BULLET PNG ---
         raw_image = pygame.image.load("assets/bullet.png").convert_alpha()
-        
-        # Uncomment the line below if your bullet still has a white background!
-        # raw_image.set_colorkey((255, 255, 255))
         
         # Scale the bullet (adjust these numbers if it's too big or small)
         self.original_image = pygame.transform.scale(raw_image, (40, 16)) 
@@ -207,3 +239,41 @@ class Projectile:
         if self.active:
             # Draw the PNG instead of the yellow circle
             screen.blit(self.image, self.rect)
+
+    # --- CYCLE 13: ADVANCED ENEMIES ---
+class FastEnemy(Enemy):
+    def __init__(self, path):
+        super().__init__(path) # Inherits the movement logic
+        
+        # Override stats for a weak but fast stealth plane
+        self.max_hp = 3
+        self.hp = self.max_hp
+        self.speed = 300.0  # Much faster than the base 200 speed
+        self.reward = 10
+        
+        self.image = pygame.image.load("assets/fast_plane.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (45, 45)) 
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+
+        self.original_image = self.image.copy() # Save a clean copy 
+        
+        self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
+        
+
+class BossEnemy(Enemy):
+    def __init__(self, path):
+        super().__init__(path)
+        
+        # Override stats for a slow, heavy bomber
+        self.max_hp = 50
+        self.hp = self.max_hp
+        self.speed = 100.0  # Very slow
+        self.reward = 100   # Big reward for defeating the boss
+        
+        self.image = pygame.image.load("assets/boss_bomber.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (60, 60)) 
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+
+        self.original_image = self.image.copy() # Save a clean copy 
+        
+        self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))

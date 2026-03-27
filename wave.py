@@ -1,4 +1,4 @@
-from entities import Enemy
+from entities import Enemy, FastEnemy, BossEnemy
 
 class WaveManager:
     def __init__(self, level_map):
@@ -28,15 +28,37 @@ class WaveManager:
             if self.enemies_to_spawn > 0:
                 self.spawn_timer += dt
                 if self.spawn_timer >= self.spawn_interval:
+                    # --- CYCLE 13: SPAWN ADVANCED ENEMIES ---
+                    wave_num = self.current_wave + 1 
                     
-                    # Spawn a new enemy
-                    new_enemy = Enemy(self.level_map.get_waypoints())
+                    if wave_num % 4 == 0:
+                        # BOSS WAVE: Spawn normal enemies, but the VERY LAST enemy is the Boss
+                        if self.enemies_to_spawn == 1:
+                            new_enemy = BossEnemy(self.level_map.waypoints)
+                        else:
+                            new_enemy = Enemy(self.level_map.waypoints)
+                            
+                    elif wave_num == 3:
+                        # WAVE 3: Mixed wave. Alternate between Fast and Normal
+                        if self.enemies_to_spawn % 2 == 0:
+                            new_enemy = FastEnemy(self.level_map.waypoints)
+                        else:
+                            new_enemy = Enemy(self.level_map.waypoints)
+                            
+                    elif wave_num % 2 == 0:
+                        # WAVE 2: All Fast enemies
+                        new_enemy = FastEnemy(self.level_map.waypoints)
+                        
+                    else:
+                        # WAVE 1: Standard enemies
+                        new_enemy = Enemy(self.level_map.waypoints)
                     
-                    # Make enemies tougher each wave (+5 Max HP per wave)
+                    # Make enemies tougher each wave! (+5 Max HP per wave)
                     new_enemy.max_hp += (self.current_wave * 5)
                     new_enemy.hp = new_enemy.max_hp
                     
                     enemy_list.append(new_enemy)
+
                     
                     # Reset spawn timer
                     self.enemies_to_spawn -= 1
