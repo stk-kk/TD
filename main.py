@@ -1,8 +1,9 @@
 import pygame
 import sys
 from settings import *
-from entities import Enemy, Tower, SniperTower, RapidTower  # <--- NEW IMPORTS
-from map import Map  # <--- NEW IMPORT
+from entities import Enemy, Tower, SniperTower, RapidTower 
+from map import Map
+from wave import WaveManager
 
 # --- Setup ---
 pygame.init()
@@ -18,15 +19,18 @@ level_map = Map()  # <--- Create the map object
 
 # --- Game State ---
 enemy_list = [] 
-test_enemy = Enemy(level_map.get_waypoints()) 
-enemy_list.append(test_enemy)
 
 tower_list = []
 player_money = 500
-player_health = 100
+player_lives = 5
 projectile_list = []
 
 current_selection = 1 # 1=Basic, 2=Sniper, 3=Rapid
+
+warning_text=""
+warning_timer=0.0
+
+wave_manager = WaveManager(level_map)
 
 # --- Main Game Loop ---
 running = True
@@ -48,48 +52,87 @@ while running:
             elif event.key == pygame.K_3:
                 current_selection = 3
                 print("Selected: Rapid Tower (150g)")
+
+                # --- CYCLE 11: RESTART GAME ---
+            elif event.key == pygame.K_r:
+                # 1. Remove all the entities off the map
+                enemy_list.clear()
+                tower_list.clear()
+                projectile_list.clear()
+                
+                # 2. Reset the players stats
+                player_money = 500
+                player_lives = 5
+                current_selection = 1
+                
+                # 3. Create a brand new WaveManager to reset the waves
+                wave_manager = WaveManager(level_map)
+                print("Game Restarted!")
             
-        # --- CYCLE 5: TOWER PLACEMENT ---
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: # 1 = Left Click
+ # --- CYCLE 5 & 12: TOWER PLACEMENT AND SELLING ---
+        if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            
-            # 1. Get grid indices
             grid_col = mouse_x // level_map.tile_size
             grid_row = mouse_y // level_map.tile_size
             
-            # 2. Check if the map tile is grass
-            if level_map.is_buildable(mouse_x, mouse_y):
-                
-                # 3. Validation: Check if a tower is ALREADY on this tile
-                position_empty = True
-                for t in tower_list:
-                    if t.grid_x == grid_col and t.grid_y == grid_row:
-                        position_empty = False
-                        break 
-                
-                # 4. If empty, append the SELECTED tower to the list
-                if position_empty:
-                    # Instantiate the correct class based on selection
-                    if current_selection == 1:
-                        new_tower = Tower(grid_col, grid_row)
-                    elif current_selection == 2:
-                        new_tower = SniperTower(grid_col, grid_row) # Instantiate Child Class
-                    elif current_selection == 3:
-                        new_tower = RapidTower(grid_col, grid_row)  # Instantiate Child Class
+            # --- LEFT CLICK: BUY TOWER ---
+            if event.button == 1: 
+                if level_map.is_buildable(mouse_x, mouse_y):
+                    position_empty = True
+                    for t in tower_list:
+                        if t.grid_x == grid_col and t.grid_y == grid_row:
+                            position_empty = False
+                            break 
                     
-                    # Check if the player has enough gold
-                    if player_money >= new_tower.cost: 
-                        tower_list.append(new_tower)
-                        player_money -= new_tower.cost 
-                        print(f"Tower Placed! Remaining money: {player_money}")
+                    if position_empty:
+                        if current_selection == 1: new_tower = Tower(grid_col, grid_row)
+                        elif current_selection == 2: new_tower = SniperTower(grid_col, grid_row)
+                        elif current_selection == 3: new_tower = RapidTower(grid_col, grid_row)
+                        
+                        # Check if the player has enough gold
+                        if player_money >= new_tower.cost:
+                            tower_list.append(new_tower)
+                            player_money -= new_tower.cost
+                            # Clear any warnings if successful
+                            warning_timer = 0.0 
+                        else:
+                            # --- TRIGGER: NOT ENOUGH GOLD ---
+                            warning_text = "Insufficient funds!"
+                            warning_timer = 2.0
                     else:
-                        print(f"Invalid: Insufficient funds. You need {new_tower.cost} gold.")
+                        # --- TRIGGER: TOWER ALREADY EXISTS ---
+                        warning_text = "Position occupied!"
+                        warning_timer = 2.0
                 else:
-                    print("Invalid: Tower already exists here.")
+                    # --- TRIGGER: INVALID PLACEMENT ---
+                    warning_text = "Cannot build on the path!"
+                    warning_timer = 2.0
+            
+            # --- RIGHT CLICK: SELL TOWER ---
+            elif event.button == 3:
+                for t in tower_list:
+                    # If there is a tower at the coordinates of the right-click
+                    if t.grid_x == grid_col and t.grid_y == grid_row:
+                        refund = t.cost // 2  # Calculate 50% refund (integer division)
+                        player_money += refund
+                        tower_list.remove(t)  # Delete the tower
+                        print(f"Tower Sold! Refunded {refund} gold.")
+                        break # Stop searching once the tower has been found and sold
 
-  # --------------------------------------------------------
     # --- Updates ---
-    # 1. Move everything (THIS IS WHAT WAS MISSING!)
+    
+    # Update warning timer
+    if warning_timer > 0:
+        warning_timer -= dt
+    
+    # 1. Check for Game Over
+    if player_lives <= 0:
+        wave_manager.game_over = True
+        
+    # 2. Update the Wave Manager (This spawns the enemies)
+    wave_manager.update(dt, enemy_list)
+    
+     # 1. Move everything 
     for enemy in enemy_list:
         enemy.update(dt) 
         
@@ -109,15 +152,14 @@ while running:
             
         # Check if the enemy reached the last waypoint on the path
         elif enemy.path_index >= len(enemy.path) - 1:
-            player_health -= 10 # Take 10 damage!
+            player_lives -= 1   # Lose 1 life
             enemy.hp = 0        # Force the enemy to "die" so it gets deleted
             
     # 4. Officially delete them from the game
     enemy_list = [e for e in enemy_list if e.hp > 0]
-    # --------------------------------------------------------
-    # ----------------------------------------------
+
     # Drawing
-    # ----------------------------------------------
+   
     
     # 1. Draw the map (Bottom Layer)
     level_map.draw(screen) 
@@ -134,7 +176,7 @@ while running:
     for proj in projectile_list:
         proj.draw(screen)
 
-    # --- CYCLE 3 & 4: MOUSE HOVER & GHOST TOWER ---
+    # --- CYCLE 3 & 4: MOUSE HOVER & PREVIEW TOWER ---
     mouse_x, mouse_y = pygame.mouse.get_pos()
     grid_col = mouse_x // level_map.tile_size
     grid_row = mouse_y // level_map.tile_size
@@ -149,7 +191,7 @@ while running:
         highlight.fill((0, 255, 0)) 
         screen.blit(highlight, (grid_x, grid_y))
         
-        # Draw Ghost Tower (Transparent Blue Square)
+        # Draw Preview Tower (Transparent Blue Square)
         ghost_tower = pygame.Surface((40, 40))
         ghost_tower.fill(BLUE)
         ghost_tower.set_alpha(150) 
@@ -163,29 +205,66 @@ while running:
         highlight.fill((255, 0, 0)) 
         screen.blit(highlight, (grid_x, grid_y))
 
-    # --- CYCLE 9: DRAW USER INTERFACE (GUI) ---
+    # --- CYCLE 9 & 10: DRAW USER INTERFACE (GUI) 
     # 1. Drawing a dark grey UI bar at the top of the screen
+    pygame.draw.rect(screen, (40, 40, 40), (0, 0, SCREEN_WIDTH, 40))
     pygame.draw.line(screen, (255, 255, 255), (0, 40), (SCREEN_WIDTH, 40), 2) # White border line
 
-    # 2. Render Text 
-    health_text = ui_font.render(f"Base Health: {player_health}", True, (255, 100, 100)) # Light Red text
-    money_text = ui_font.render(f"Gold: {player_money}", True, (255, 215, 0))          # Gold text
+    # 2. Render Base Health and Gold
+    lives_text = ui_font.render(f"Lives: {player_lives}", True, (255, 100, 100)) # Light Red
+    money_text = ui_font.render(f"Gold: {player_money}", True, (255, 215, 0))       # Gold
     
-    # 3. Determine which tower text to show based on your keyboard selection
+    # 3. Render Selected Tower (Shortened slightly to stop text clipping)
     if current_selection == 1: 
-        tower_info = "Basic (100g) | DMG: 1 | SPD: Normal"
+        tower_info = "Basic (100g) | DMG:1 | SPD:Med"
     elif current_selection == 2: 
-        tower_info = "Sniper (250g) | DMG: 5 | SPD: Slow"
+        tower_info = "Sniper (250g) | DMG:5 | SPD:Slow"
     elif current_selection == 3: 
-        tower_info = "Rapid (150g) | DMG: 1 | SPD: Fast"
+        tower_info = "Rapid (150g) | DMG:1 | SPD:Fast"
         
     selection_text = ui_font.render(f"Selected: {tower_info}", True, (255, 255, 255))
 
-    # 4. Blit (Draw) the text onto the screen
-    screen.blit(health_text, (20, 10))
-    screen.blit(money_text, (200, 10))
-    screen.blit(selection_text, (400, 10))
+    # 4. Render Wave Status
+    if wave_manager.game_over:
+        wave_text = ui_font.render("GAME OVER", True, (255, 0, 0))
+    elif wave_manager.game_won:
+        wave_text = ui_font.render("YOU WIN!", True, (0, 255, 0))
+    else:
+        status = f"Wave: {wave_manager.current_wave + 1}/{len(wave_manager.waves)}"
+        if not wave_manager.wave_active:
+            countdown = int(wave_manager.wave_delay - wave_manager.wave_timer)
+            status += f" (Next in {countdown}s)"
+        wave_text = ui_font.render(status, True, (200, 200, 255)) # Light blue text
 
+    # 5. Blit (Draw) the text onto the screen with actual spacing this time
+    screen.blit(lives_text, (10, 10))
+    screen.blit(money_text, (160, 10))
+    screen.blit(selection_text, (330, 10))
+    
+    # Aligningthe wave text so it stays perfectly on the right side of the screen
+    wave_rect = wave_text.get_rect(topright=(SCREEN_WIDTH - 20, 10))
+    screen.blit(wave_text, wave_rect)
+
+    # Draw Enemies (Ensures health bars draw OVER the map)
+    for enemy in enemy_list:
+        enemy.draw(screen) 
+    
+    # --- DRAW WARNING MESSAGE ---
+    if warning_timer > 0:
+        # Render the text in bright red
+        warning_surface = ui_font.render(warning_text, True, (255, 50, 50))
+        
+        # Center it on the screen
+        warning_rect = warning_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        
+        # Draw a black box behind the text so it stands out against the grass
+        bg_rect = warning_rect.inflate(20, 10) # Makes the box slightly larger than the text
+        pygame.draw.rect(screen, (0, 0, 0), bg_rect)
+        pygame.draw.rect(screen, (255, 50, 50), bg_rect, 2) # Red border
+        
+        # Blit the text
+        screen.blit(warning_surface, warning_rect)
+    
     # ----------------------------------------------
 
     pygame.display.flip()
