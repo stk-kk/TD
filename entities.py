@@ -39,7 +39,7 @@ class Enemy:
             bar_width = 40
             bar_height = 6
             
-            # ut the bar slightly above the enemy's head
+            # Put the bar slightly above the enemy's head
             bar_x = self.rect.centerx - (bar_width / 2)
             bar_y = self.rect.top - 10 
             
@@ -59,11 +59,11 @@ class Enemy:
             distance = math.hypot(dir_x, dir_y)
             
             if distance > 0:
-                # Divide vector by distance) and multiply by constant speed
+                # Divide vector by distance and multiply by constant speed
                 move_x = (dir_x / distance) * self.speed * dt
                 move_y = (dir_y / distance) * self.speed * dt
                 
-                # Doesn't overshooting the target
+                # Prevent overshooting the target
                 if abs(move_x) > abs(dir_x): move_x = dir_x
                 if abs(move_y) > abs(dir_y): move_y = dir_y
                 
@@ -88,7 +88,6 @@ class Tower:
         self.pixel_x = (grid_x * 64) + 32
         self.pixel_y = (grid_y * 64) + 32
         
-        
         # Base stats (from Design)
         self.range = 150
         self.damage = 1
@@ -103,6 +102,14 @@ class Tower:
         self.image = pygame.transform.scale(raw_image, (64, 64))
         self.original_image = self.image.copy() # Save a clean copy for rotations
         self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
+        
+        # --- CYCLE 16: TOWER AUDIO ---
+        # Load the sound into RAM for instant playback during combat
+        try:
+            self.sfx_shoot = pygame.mixer.Sound("assets/shoot.wav")
+            self.sfx_shoot.set_volume(0.3) # Kept quiet to prevent audio peaking
+        except FileNotFoundError:
+            self.sfx_shoot = None
         
     def draw(self, screen):
         screen.blit(self.image, self.rect)
@@ -139,24 +146,20 @@ class Tower:
             self.image = pygame.transform.rotate(self.original_image, angle_deg)
             self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
 
-        # Once tower is ready to shoot, fire the turret
-        if self.cooldown <= 0:
-            for enemy in enemy_list:
-                # Calculate distance to enemy
-                dist = math.hypot(enemy.rect.centerx - self.pixel_x, enemy.rect.centery - self.pixel_y)
+            # 4. Fire a projectile if cooldown is ready
+            if self.cooldown <= 0:
+                new_bullet = Projectile(self.pixel_x, self.pixel_y, target, self.damage)
+                projectile_list.append(new_bullet)
                 
-                # If the enemy is inside the range circle AND is still alive
-                if dist <= self.range and enemy.hp > 0:
-                    # Fires, creates a projectile and reset cooldown
-                    new_bullet = Projectile(self.pixel_x, self.pixel_y, enemy, self.damage)
-                    projectile_list.append(new_bullet)
-                    
-                    self.cooldown = 1.0 / self.fire_rate
-                    break # Only shoot one enemy at a time
+                # Play the shooting sound effect if it loaded successfully
+                if self.sfx_shoot:
+                    self.sfx_shoot.play()
+                
+                self.cooldown = 1.0 / self.fire_rate
 
 # --- CYCLE 8: INHERITANCE & POLYMORPHISM ---
 
-class SniperTower(Tower): # (Tower) means it inherits from the Tower class
+class SniperTower(Tower): 
     def __init__(self, grid_x, grid_y):
         super().__init__(grid_x, grid_y) # Run the Parent's setup
         
@@ -185,10 +188,8 @@ class RapidTower(Tower):
         # Load the rapid tower sprite
         self.image = pygame.image.load("assets/rapid_tower.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (64, 64))
-        self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
         self.original_image = self.image.copy() # Save a clean copy 
         self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
-
 
 class Projectile:
     def __init__(self, start_x, start_y, target, damage):
@@ -240,7 +241,7 @@ class Projectile:
             # Draw the PNG instead of the yellow circle
             screen.blit(self.image, self.rect)
 
-    # --- CYCLE 13: ADVANCED ENEMIES ---
+# --- CYCLE 13: ADVANCED ENEMIES ---
 class FastEnemy(Enemy):
     def __init__(self, path):
         super().__init__(path) # Inherits the movement logic
@@ -253,13 +254,9 @@ class FastEnemy(Enemy):
         
         self.image = pygame.image.load("assets/fast_plane.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (45, 45)) 
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-
         self.original_image = self.image.copy() # Save a clean copy 
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         
-        self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
-        
-
 class BossEnemy(Enemy):
     def __init__(self, path):
         super().__init__(path)
@@ -270,10 +267,7 @@ class BossEnemy(Enemy):
         self.speed = 100.0  # Very slow
         self.reward = 100   # Big reward for defeating the boss
         
-        self.image = pygame.image.load("assets/boss_bomber.png").convert_alpha()
+        self.image = pygame.image.load("assets/boss_bomber.png").convert_alpha() # Note: renamed boss_bomber.png
         self.image = pygame.transform.scale(self.image, (60, 60)) 
-        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-
         self.original_image = self.image.copy() # Save a clean copy 
-        
-        self.rect = self.image.get_rect(center=(self.pixel_x, self.pixel_y))
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
